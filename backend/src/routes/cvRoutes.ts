@@ -6,9 +6,9 @@ import { auth } from '../middleware/auth'; // Middleware de autenticación exist
 const router = Router();
 
 // Ruta para subir y analizar CV
-router.post('/upload', auth, upload.single('cv'), uploadCV);
+router.post('/upload', auth(['admin', 'reclutador', 'candidato']), upload.single('cv'), uploadCV);
 
 // Ruta para obtener análisis de un CV específico
-router.get('/:id', auth, getCVAnalysis);
+router.get('/:id', auth(['admin', 'reclutador', 'candidato']), getCVAnalysis);
 
 export default router;

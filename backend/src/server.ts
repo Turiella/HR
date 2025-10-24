@@ -12,13 +12,18 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.static('public')); // Para servir archivos estáticos
 
 // Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api', protectedRoutes);
+// Aplica JSON parser solo a rutas que reciben JSON
+app.use('/api/auth', express.json(), authRoutes);
+app.use('/api', express.json(), protectedRoutes);
+// Las rutas de CV usan multipart/form-data, no aplicar express.json() antes
 app.use('/api/cvs', cvRoutes);
 
 // Ruta de prueba

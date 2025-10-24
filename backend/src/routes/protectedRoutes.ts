@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { auth } from '../middleware/auth';
+import { getRanking } from '../controllers/rankingController';
+import { getCandidateProfile } from '../controllers/candidateController';
 
 const router = Router();
 
@@ -28,6 +30,12 @@ router.get('/recruiter-panel', auth(['reclutador']), (req, res) => {
     }
   });
 });
+
+// Ranking de candidatos por filtros/prompt (MVP sin IA)
+router.post('/ranking', auth(['reclutador']), getRanking);
+
+// Perfil de candidato
+router.get('/candidates/:id', auth(['reclutador']), getCandidateProfile);
 
 // Ruta protegida solo para candidatos
 router.get('/candidate-panel', auth(['candidato']), (req, res) => {

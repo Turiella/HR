@@ -12,8 +12,20 @@ export const uploadCV = async (req: Request, res: Response) => {
     const userId = (req as any).user?.id; // Asumiendo que viene del middleware de auth
     const filters = req.body.filters ? JSON.parse(req.body.filters) : undefined;
 
-    // Analizar el CV
-    const analysis = await analyzePDF(req.file.path, filters);
+    // Analizar el CV (con fallback si falla)
+    let analysis;
+    try {
+      analysis = await analyzePDF(req.file.path, filters);
+    } catch (e) {
+      console.error('Fallo el análisis de PDF, se usa fallback:', e);
+      analysis = {
+        skills: [],
+        experienceYears: 0,
+        education: [],
+        classificationScore: 0,
+        parsedData: { error: 'analysis_failed' }
+      };
+    }
 
     // Guardar en la base de datos
     const result = await pool.query(

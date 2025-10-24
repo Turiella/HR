@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response) => {
 
     // Verificar si el usuario ya existe
     const userExists = await pool.query(
-      'SELECT 1 FROM profiles WHERE email = $1',
+      'SELECT 1 FROM users WHERE email = $1',
       [email]
     );
 
@@ -32,9 +32,9 @@ export const register = async (req: Request, res: Response) => {
 
     // Crear usuario
     const result = await pool.query(
-      `INSERT INTO profiles (email, password_hash, nombre_completo, rol)
+      `INSERT INTO users (email, password, full_name, role)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, email, rol, nombre_completo`,
+       RETURNING id, email, role, full_name`,
       [email, hashedPassword, full_name, role]
     );
 
@@ -42,7 +42,7 @@ export const register = async (req: Request, res: Response) => {
 
     // Generar token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.rol },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET as string,
       { expiresIn: '24h' }
     );
@@ -64,7 +64,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Buscar usuario
     const result = await pool.query(
-      'SELECT * FROM profiles WHERE email = $1',
+      'SELECT * FROM users WHERE email = $1',
       [email]
     );
 
@@ -75,7 +75,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Verificar contraseña
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -83,7 +83,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Generar token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.rol },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET as string,
       { expiresIn: '24h' }
     );
@@ -92,8 +92,8 @@ export const login = async (req: Request, res: Response) => {
       user: {
         id: user.id,
         email: user.email,
-        role: user.rol,
-        full_name: user.nombre_completo
+        role: user.role,
+        full_name: user.full_name
       },
       token
     });

@@ -23,7 +23,7 @@ const UploadForm = () => {
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-            'Content-Type': 'multipart/form-data'
+            // No fijar Content-Type manualmente; axios lo establece con boundary
           }
         }
       );
