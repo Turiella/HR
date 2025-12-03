@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API = '/api'; // Usar ruta relativa para que el proxy de Vite funcione
-console.log('API URL:', API); // Debug: verificar que la URL sea correcta
+const API = import.meta.env.VITE_API_BASE;
+console.log('API URL:', API); //
 
 const apiClient = axios.create({
   baseURL: API,
