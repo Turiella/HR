@@ -33,6 +33,7 @@ export const initDatabase = async () => {
           id SERIAL PRIMARY KEY,
           user_id INTEGER REFERENCES users(id),
           filename VARCHAR(255) NOT NULL,
+          stored_filename VARCHAR(255),
           content_text TEXT,
           parsed_data JSONB,
           skills TEXT[],
@@ -40,6 +41,35 @@ export const initDatabase = async () => {
           education TEXT[],
           classification_score FLOAT,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+      `);
+      await pool.query(`ALTER TABLE cvs ADD COLUMN IF NOT EXISTS stored_filename VARCHAR(255);`);
+      await pool.query(`ALTER TABLE cvs ADD COLUMN IF NOT EXISTS category VARCHAR(60) DEFAULT 'otro';`);
+      await pool.query(`ALTER TABLE cvs ADD COLUMN IF NOT EXISTS is_primary BOOLEAN DEFAULT false;`);
+      await pool.query(`ALTER TABLE cvs ADD COLUMN IF NOT EXISTS version INT DEFAULT 1;`);
+
+      // Índice único parcial: un solo principal por usuario y categoría
+      await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'uniq_primary_per_user_category'
+        ) THEN
+          CREATE UNIQUE INDEX uniq_primary_per_user_category
+            ON cvs (user_id, category)
+            WHERE is_primary;
+        END IF;
+      END $$;
+      `);
+
+      // Marks de CV por reclutador
+      await pool.query(`
+      CREATE TABLE IF NOT EXISTS cv_marks (
+        id SERIAL PRIMARY KEY,
+        cv_id INTEGER REFERENCES cvs(id) ON DELETE CASCADE,
+        recruiter_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (cv_id, recruiter_id)
       );
       `);
       

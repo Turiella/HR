@@ -18,8 +18,11 @@ export interface CVAnalysis {
 
 export async function analyzePDF(filePath: string, filters?: string[]): Promise<CVAnalysis> {
   try {
+    console.log('🔍 Iniciando análisis de PDF:', filePath);
+    
     // Safe mode para desarrollo: evita dependencias externas
     if (process.env.ANALYZE_DISABLED === '1') {
+      console.log('⚠️ Análisis deshabilitado (safe mode)');
       return {
         skills: [],
         experienceYears: 0,
@@ -30,35 +33,75 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
     }
 
     // Extraer texto con pdf.js-extract
+    console.log('📄 Extrayendo texto del PDF...');
     const extractor = new PdfExtract();
     const data = await extractor.extract(filePath, {});
+    
+    if (!data || !data.pages || data.pages.length === 0) {
+      console.error('❌ No se pudo extraer texto del PDF');
+      throw new Error('No se pudo extraer texto del PDF');
+    }
+    
     const text = (data?.pages || [])
       .map((p: any) => (p.content || []).map((c: any) => c.str).join(' '))
       .join('\n');
     
-    // Construir el prompt con los filtros si existen
-    const filtersText = filters ? `\nEvalúa el CV según estos filtros: ${filters.join(', ')}` : '';
+    console.log('✅ Texto extraído:', text.length, 'caracteres');
     
-    const prompt = `Analiza el siguiente CV y extrae la información relevante. Devuelve un JSON con:
-    - skills: array de habilidades técnicas y blandas
-    - experienceYears: número total de años de experiencia
-    - education: array de títulos/certificaciones
-    - classificationScore: puntuación de 0 a 1 basada en la relevancia${filtersText}
-    
-    CV:
-    ${text}`;
+    if (text.trim().length === 0) {
+      console.error('❌ El PDF no contiene texto extraíble');
+      throw new Error('El PDF no contiene texto extraíble');
+    }
 
-    // Heurísticas simples para MVP
+    // Heurísticas mejoradas para MVP
+    console.log('🧠 Aplicando heurísticas de análisis...');
     const lower = text.toLowerCase();
+    
+    // Skills más completas
     const skillDict = [
-      'javascript','typescript','react','node','express','postgres','sql','docker','aws','python','java','git','css','html','redux','vite','tailwind','nextjs'
+      'javascript','typescript','react','node','express','postgres','sql','docker','aws','python','java','git','css','html','redux','vite','tailwind','nextjs',
+      'angular','vue','mongodb','mysql','redis','kubernetes','terraform','jenkins','github','gitlab','linux','ubuntu','windows','bash','php','ruby','go','rust',
+      'csharp','dotnet','spring','django','flask','laravel','rails','sass','bootstrap','material-ui','firebase','graphql','rest','api','microservices',
+      'agile','scrum','jira','testing','jest','cypress','selenium','unit','e2e','security','authentication','jwt','oauth','performance','optimization'
     ];
+    
     const skills = Array.from(new Set(skillDict.filter(s => lower.includes(s))));
-    const expMatch = lower.match(/(\d{1,2})\s*(años|year|years)/);
-    const experienceYears = expMatch ? Math.min(40, parseInt(expMatch[1], 10)) : 0;
-    const educationKeywords = ['licenciado','ingeniero','bachelor','master','maestría','doctor','phd','técnico','certificado','certificación'];
+    console.log('💻 Skills detectadas:', skills.length, skills);
+    
+    // Experiencia mejorada
+    const expPatterns = [
+      /(\d{1,2})\s*(años|year|years)/i,
+      /(\d{1,2})\s*(años|year|years)\s*de\s*experiencia/i,
+      /experiencia\s*de\s*(\d{1,2})\s*(años|year|years)/i,
+      /(\d{1,2})\s*\+\s*(años|year|years)/i
+    ];
+    
+    let experienceYears = 0;
+    for (const pattern of expPatterns) {
+      const match = lower.match(pattern);
+      if (match) {
+        experienceYears = Math.min(40, parseInt(match[1], 10));
+        break;
+      }
+    }
+    console.log('💼 Experiencia detectada:', experienceYears, 'años');
+    
+    // Educación mejorada
+    const educationKeywords = [
+      'licenciado','ingeniero','bachelor','master','maestría','doctor','phd','técnico','certificado','certificación',
+      'universidad','university','degree','diploma','curso','course','workshop','seminar','congreso','conference'
+    ];
     const education = educationKeywords.filter(k => lower.includes(k));
-    const classificationScore = Math.min(1, (skills.length / 10) + (experienceYears >= 3 ? 0.2 : 0));
+    console.log('🎓 Educación detectada:', education.length, education);
+    
+    // Score mejorado
+    const skillScore = Math.min(1, skills.length / 15);
+    const expScore = Math.min(1, experienceYears / 10);
+    const eduScore = Math.min(1, education.length / 5);
+    const classificationScore = (skillScore * 0.5) + (expScore * 0.3) + (eduScore * 0.2);
+    
+    console.log('📊 Score final:', classificationScore.toFixed(2));
+    
     const result = { skills, experienceYears, education, classificationScore };
     
     return {
@@ -66,10 +109,21 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
       experienceYears: result.experienceYears,
       education: result.education,
       classificationScore: result.classificationScore,
-      parsedData: { ...result, text }
+      parsedData: { ...result, text, analysisMethod: 'heuristics' }
     };
   } catch (error) {
-    console.error('Error analizando PDF:', error);
-    throw error;
+    console.error('❌ Error analizando PDF:', error);
+    // En lugar de lanzar el error, devolver un resultado con información del error
+    return {
+      skills: [],
+      experienceYears: 0,
+      education: [],
+      classificationScore: 0,
+      parsedData: { 
+        error: 'analysis_failed',
+        errorDetails: error instanceof Error ? error.message : 'Unknown error',
+        text: ''
+      }
+    };
   }
 }

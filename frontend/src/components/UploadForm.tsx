@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { uploadCv } from '../api/cv';
 
 const UploadForm = () => {
   const [file, setFile] = useState<File | null>(null);
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [category, setCategory] = useState('it');
+  const [makePrimary, setMakePrimary] = useState(true);
 
   const handleUpload = async () => {
     if (!file) {
@@ -12,23 +14,11 @@ const UploadForm = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('cv', file);
-
     setLoading(true);
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/cvs/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-            // No fijar Content-Type manualmente; axios lo establece con boundary
-          }
-        }
-      );
-
-      setAnalysis(res.data.analysis);
+      const token = localStorage.getItem('token') || '';
+      const res = await uploadCv(file, { category, setPrimary: makePrimary }, token);
+      setAnalysis(res.analysis);
       alert('✅ CV subido y analizado correctamente');
     } catch (err) {
       console.error('❌ Error al subir el CV:', err);
@@ -47,6 +37,25 @@ const UploadForm = () => {
         onChange={(e) => setFile(e.target.files?.[0] || null)}
         className="mb-2"
       />
+      <div className="grid items-center grid-cols-2 gap-3 mb-3">
+        <div>
+          <label className="block mb-1 text-sm font-medium">Categoría</label>
+          <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-2 bg-black/10 border rounded">
+            <option value="it">IT</option>
+            <option value="ventas">Ventas</option>
+            <option value="atencion">Atención al público</option>
+            <option value="contable">Contable</option>
+            <option value="operario">Operario</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div className="mt-6">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={makePrimary} onChange={e => setMakePrimary(e.target.checked)} />
+            Marcar como principal en esta categoría
+          </label>
+        </div>
+      </div>
       <button
         onClick={handleUpload}
         disabled={loading}

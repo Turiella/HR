@@ -13,13 +13,68 @@ export const getCandidateProfile = async (req: Request, res: Response) => {
     );
     if (userRes.rows.length === 0) return res.status(404).json({ error: 'Candidato no encontrado' });
 
-    const cvsRes = await pool.query(
-      `SELECT id, filename, skills, experience_years, education, classification_score, created_at
-       FROM cvs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5`,
+    // Traer todos los CVs del usuario para agrupar por categoría (limitamos a 50 versiones totales por seguridad)
+    const allRes = await pool.query(
+      `SELECT id, filename, stored_filename, category, is_primary, version,
+              skills, experience_years, education, classification_score, created_at, parsed_data
+       FROM cvs
+       WHERE user_id = $1
+       ORDER BY category, created_at DESC
+       LIMIT 50`,
       [id]
     );
 
-    res.json({ user: userRes.rows[0], cvs: cvsRes.rows });
+    // Agrupar por categoría en memoria
+    const map: Record<string, any> = {};
+    for (const row of allRes.rows) {
+      const cat = row.category || 'otro';
+      if (!map[cat]) {
+        map[cat] = { name: cat, primaryCv: null as any, latestCv: null as any, versions: [] as any[] };
+      }
+      map[cat].versions.push(row);
+      if (row.is_primary) map[cat].primaryCv = row;
+      if (!map[cat].latestCv) map[cat].latestCv = row; // primero por created_at desc
+    }
+
+    // Compat: array cvs = principales por categoría (o latest si no hay principal)
+    const cvsCompat: any[] = [];
+    Object.values(map).forEach((cat: any) => {
+      cvsCompat.push(cat.primaryCv || cat.latestCv);
+    });
+
+    // Calcular recomendado según filtros opcionales en querystring
+    // required, preferred, jd (comma separated)
+    const reqQ = String(req.query.required || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+    const prefQ = String(req.query.preferred || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+    const jdQ = String(req.query.jd || '').toLowerCase();
+
+    let recommended: any = null;
+    if (reqQ.length > 0 || prefQ.length > 0 || jdQ) {
+      const allCVs: any[] = allRes.rows;
+      let best = -1;
+      let bestItem: any = null;
+      let bestReasons: any = null;
+      for (const cv of allCVs) {
+        const skills: string[] = (cv.skills || []).map((s: string) => String(s).toLowerCase());
+        const text: string = String((cv.parsed_data?.text) || '').toLowerCase();
+        const requiredMatches = reqQ.filter(s => skills.includes(s) || text.includes(s)).length;
+        const preferredMatches = prefQ.filter(s => skills.includes(s) || text.includes(s)).length;
+        const jdMatches = jdQ ? (jdQ.split(/[^a-zá-ú0-9+#\.]+/i).filter(tok => tok && (skills.includes(tok) || text.includes(tok))).length) : 0;
+        const baseScore = Number(cv.classification_score || 0);
+        // Heurística simple: pesos 2x required, 1x preferred, 0.5x jd tokens, + baseScore
+        const score = (requiredMatches * 2) + (preferredMatches * 1) + (jdMatches * 0.5) + baseScore;
+        if (score > best) {
+          best = score;
+          bestItem = cv;
+          bestReasons = { requiredMatches, preferredMatches, jdMatches, baseScore };
+        }
+      }
+      if (bestItem) {
+        recommended = { cv: bestItem, reasons: bestReasons, score: best };
+      }
+    }
+
+    res.json({ user: userRes.rows[0], categories: Object.values(map), cvs: cvsCompat, recommendedCv: recommended });
   } catch (e) {
     console.error('Error obteniendo perfil de candidato:', e);
     res.status(500).json({ error: 'Error interno del servidor' });
