@@ -49,7 +49,7 @@ app.get('/', (req, res) => {
 });
 
 // Puerto
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Inicializar base de datos y servidor
 const startServer = async () => {
