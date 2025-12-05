@@ -42,7 +42,7 @@ app.use((req, res, next) => {
   ];
   
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
   
@@ -52,7 +52,7 @@ app.use((req, res, next) => {
   
   if (req.method === 'OPTIONS') {
     const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
+    if (origin && allowedOrigins.includes(origin)) {
       res.header('Access-Control-Allow-Origin', origin);
     }
     res.status(200).send();
