@@ -18,7 +18,8 @@ app.use(cors({
     'http://localhost:5174', 
     'http://localhost:3000',
     'https://hr-frontend-phi.vercel.app',
-    'https://hr-frontend.vercel.app'
+    'https://hr-frontend.vercel.app',
+    'https://hr-frontend-8nqs7m56v-martin-s-projects-b092de55.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -32,7 +33,8 @@ app.use((req, res, next) => {
     'http://localhost:5174', 
     'http://localhost:3000',
     'https://hr-frontend-phi.vercel.app',
-    'https://hr-frontend.vercel.app'
+    'https://hr-frontend.vercel.app',
+    'https://hr-frontend-8nqs7m56v-martin-s-projects-b092de55.vercel.app'
   ];
   
   const origin = req.headers.origin;
