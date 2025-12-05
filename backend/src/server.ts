@@ -20,7 +20,8 @@ app.use(cors({
     'https://hr-frontend-phi.vercel.app',
     'https://hr-frontend.vercel.app',
     'https://hr-frontend-8nqs7m56v-martin-s-projects-b092de55.vercel.app',
-    'https://hr-frontend-git-main-martin-s-projects-b092de55.vercel.app'
+    'https://hr-frontend-git-main-martin-s-projects-b092de55.vercel.app',
+    'https://hr-frontend-fgk1pazy6-martin-s-projects-b092de55.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -36,7 +37,8 @@ app.use((req, res, next) => {
     'https://hr-frontend-phi.vercel.app',
     'https://hr-frontend.vercel.app',
     'https://hr-frontend-8nqs7m56v-martin-s-projects-b092de55.vercel.app',
-    'https://hr-frontend-git-main-martin-s-projects-b092de55.vercel.app'
+    'https://hr-frontend-git-main-martin-s-projects-b092de55.vercel.app',
+    'https://hr-frontend-fgk1pazy6-martin-s-projects-b092de55.vercel.app'
   ];
   
   const origin = req.headers.origin;
