@@ -58,7 +58,7 @@ export const uploadCV = async (req: Request, res: Response) => {
           userId,
           req.file.originalname,
           (req as any).file?.filename || req.file.filename,
-          req.file.buffer?.toString() || '',
+          req.file.buffer ? req.file.buffer.toString('base64') : '',
           analysis.parsedData,
           analysis.skills,
           analysis.experienceYears,

@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai';
 import fs from 'fs/promises';
 
-const { PdfExtract } = require('pdf.js-extract');
+const PdfExtract = require('pdf.js-extract').PdfExtract;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
