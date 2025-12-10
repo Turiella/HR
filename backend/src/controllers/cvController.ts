@@ -20,7 +20,12 @@ export const uploadCV = async (req: Request, res: Response) => {
     // Analizar el CV (con fallback si falla)
     let analysis;
     try {
-      analysis = await analyzePDF(req.file.path, filters);
+      // Usar buffer para memoryStorage (Railway)
+      if (req.file.buffer) {
+        analysis = await analyzePDF(req.file.buffer, filters);
+      } else {
+        throw new Error('No file buffer available');
+      }
     } catch (e) {
       console.error('Fallo el análisis de PDF, se usa fallback:', e);
       analysis = {

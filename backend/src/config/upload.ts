@@ -1,15 +1,8 @@
 import multer from 'multer';
 import path from 'path';
 
-// Configurar almacenamiento temporal para los archivos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Asegúrate de crear esta carpeta
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+// Configurar almacenamiento en memoria para Railway (serverless)
+const storage = multer.memoryStorage();
 
 // Filtro para aceptar solo PDFs
 const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {

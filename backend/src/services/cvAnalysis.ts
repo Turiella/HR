@@ -1,7 +1,6 @@
 import { OpenAI } from 'openai';
 import fs from 'fs/promises';
-// Usamos pdf.js-extract para extracción determinística
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const { PdfExtract } = require('pdf.js-extract');
 
 const openai = new OpenAI({
@@ -15,12 +14,23 @@ export interface CVAnalysis {
   classificationScore: number;
   parsedData: any;
 }
-
-export async function analyzePDF(filePath: string, filters?: string[]): Promise<CVAnalysis> {
+export async function analyzePDF(input: string | Buffer, filters?: string[]): Promise<CVAnalysis> {
+  let filePath: string;
+  let tempFile: string | null = null;
+  
   try {
+
+    if (Buffer.isBuffer(input)) {
+      const crypto = require('crypto');
+      tempFile = `/tmp/${crypto.randomBytes(16).toString('hex')}.pdf`;
+      require('fs').writeFileSync(tempFile, input);
+      filePath = tempFile;
+    } else {
+      filePath = input;
+    }
+
     console.log('🔍 Iniciando análisis de PDF:', filePath);
     
-    // Safe mode para desarrollo: evita dependencias externas
     if (process.env.ANALYZE_DISABLED === '1') {
       console.log('⚠️ Análisis deshabilitado (safe mode)');
       return {
@@ -53,11 +63,9 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
       throw new Error('El PDF no contiene texto extraíble');
     }
 
-    // Heurísticas mejoradas para MVP
     console.log('🧠 Aplicando heurísticas de análisis...');
     const lower = text.toLowerCase();
     
-    // Skills más completas
     const skillDict = [
       'javascript','typescript','react','node','express','postgres','sql','docker','aws','python','java','git','css','html','redux','vite','tailwind','nextjs',
       'angular','vue','mongodb','mysql','redis','kubernetes','terraform','jenkins','github','gitlab','linux','ubuntu','windows','bash','php','ruby','go','rust',
@@ -68,7 +76,6 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
     const skills = Array.from(new Set(skillDict.filter(s => lower.includes(s))));
     console.log('💻 Skills detectadas:', skills.length, skills);
     
-    // Experiencia mejorada
     const expPatterns = [
       /(\d{1,2})\s*(años|year|years)/i,
       /(\d{1,2})\s*(años|year|years)\s*de\s*experiencia/i,
@@ -86,7 +93,6 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
     }
     console.log('💼 Experiencia detectada:', experienceYears, 'años');
     
-    // Educación mejorada
     const educationKeywords = [
       'licenciado','ingeniero','bachelor','master','maestría','doctor','phd','técnico','certificado','certificación',
       'universidad','university','degree','diploma','curso','course','workshop','seminar','congreso','conference'
@@ -94,7 +100,6 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
     const education = educationKeywords.filter(k => lower.includes(k));
     console.log('🎓 Educación detectada:', education.length, education);
     
-    // Score mejorado
     const skillScore = Math.min(1, skills.length / 15);
     const expScore = Math.min(1, experienceYears / 10);
     const eduScore = Math.min(1, education.length / 5);
@@ -113,7 +118,7 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
     };
   } catch (error) {
     console.error('❌ Error analizando PDF:', error);
-    // En lugar de lanzar el error, devolver un resultado con información del error
+
     return {
       skills: [],
       experienceYears: 0,
@@ -125,5 +130,14 @@ export async function analyzePDF(filePath: string, filters?: string[]): Promise<
         text: ''
       }
     };
+  } finally {
+    if (tempFile) {
+      try {
+        require('fs').unlinkSync(tempFile);
+        console.log('🗑️ Archivo temporal eliminado:', tempFile);
+      } catch (cleanupError) {
+        console.error('⚠️ Error eliminando archivo temporal:', cleanupError);
+      }
+    }
   }
 }
