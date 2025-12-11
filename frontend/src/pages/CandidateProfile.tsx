@@ -198,48 +198,197 @@ export default function CandidateProfile() {
     }
   };
 return (
-  <div className="max-w-5xl px-4 py-8 mx-auto">
-    <div className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold">Perfil de candidato</h1>
-      <div className="flex items-center gap-3">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="px-3 py-1 text-sm text-white bg-white/10 border border-white/20 rounded hover:bg-white/20"
-        >
-          Volver
-        </button>
-        <LogoutButton variant="header" />
+  <div className="max-w-2xl pl-[calc(1.5rem+10px)] pr-6 py-6 mx-auto">
+    <div className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
+      <div className="flex items-center justify-start gap-4">
+        <div className="flex flex-col items-center gap-3">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="px-3 py-1 text-sm text-white bg-white/10 border border-white/20 rounded hover:bg-white/20"
+          >
+            Volver
+          </button>
+          <LogoutButton variant="header" />
+        </div>
+        <div className="text-left">
+          <h1 className="text-lg font-bold text-white flex items-center justify-center">
+            <span className="text-sm mr-2"></span> Perfil de candidato
+          </h1>
+          <p className="mt-1 text-sm text-gray-400">Información detallada del candidato y sus CVs.</p>
+        </div>
       </div>
     </div>
 
-    {/* Sección de perfil del usuario */}
-    <div className="p-4 mb-6 bg-white/5 border border-white/10 rounded-lg">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="text-2xl font-semibold">{user?.full_name}</div>
-          <div className="text-sm text-gray-300">{user?.email}</div>
-          <div className="flex flex-wrap gap-2 mt-2 text-xs">
-            <span className="px-2 py-0.5 bg-white/10 border border-white/20 rounded">
-              Género: <span className="font-medium">{user?.gender || '—'}</span>
-            </span>
-            <span className="px-2 py-0.5 bg-white/10 border border-white/20 rounded">
-              Ciudad: <span className="font-medium">{user?.city || '—'}</span>
-            </span>
-            {user?.created_at && (
-              <span className="px-2 py-0.5 bg-white/10 border border-white/20 rounded">
-                Alta: {new Date(user.created_at).toLocaleDateString()}
-              </span>
+    {/* Tarjeta de información del candidato */}
+    <div className="mb-6">
+      <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl border border-white/10 overflow-hidden">
+        {/* Header de la tarjeta */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+              <span className="text-2xl">👤</span>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white">{user?.full_name}</h2>
+              <p className="text-indigo-200">{user?.email}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Contenido de la tarjeta */}
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información personal */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <span className="text-indigo-400">📋</span>
+                Información Personal
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 w-20">Género:</span>
+                  <span className="px-3 py-1 bg-white/10 border border-white/20 rounded text-white">
+                    {user?.gender || 'No especificado'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 w-20">Ciudad:</span>
+                  <span className="px-3 py-1 bg-white/10 border border-white/20 rounded text-white">
+                    {user?.city || 'No especificada'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 w-20">Alta:</span>
+                  <span className="px-3 py-1 bg-white/10 border border-white/20 rounded text-white">
+                    {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'No disponible'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ubicación */}
+            {hasCoords && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <span className="text-indigo-400">📍</span>
+                  Ubicación
+                </h3>
+                <div className="rounded-lg overflow-hidden border border-white/20">
+                  <iframe
+                    title="Mapa"
+                    className="w-full h-48"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${(user?.lon || 0) - 0.02}%2C${(user?.lat || 0) - 0.02}%2C${(user?.lon || 0) + 0.02}%2C${(user?.lat || 0) + 0.02}&layer=mapnik&marker=${user?.lat || 0}%2C${user?.lon || 0}`}
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>
-        
-        {hasCoords && (
-          <div className="w-full sm:w-64 h-40 mt-4 sm:mt-0">
-            <iframe
-              title="Mapa"
-              className="w-full h-full rounded border border-white/10"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${(user?.lon || 0) - 0.02}%2C${(user?.lat || 0) - 0.02}%2C${(user?.lon || 0) + 0.02}%2C${(user?.lat || 0) + 0.02}&layer=mapnik&marker=${user?.lat || 0}%2C${user?.lon || 0}`}
-            />
+      </div>
+    </div>
+
+    {/* Panel de gestión de CVs */}
+    <div className="p-4 mb-6 bg-white/5 border border-white/10 rounded-lg">
+      <h3 className="mb-4 text-lg font-semibold text-white">Gestión de CVs</h3>
+      
+      {/* Estadísticas de CVs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+          <div className="text-sm text-blue-300">Total de CVs</div>
+          <div className="text-xl font-bold text-blue-200">
+            {data?.categories?.reduce((total, cat) => total + cat.versions.length, 0) || 0}
+          </div>
+        </div>
+        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="text-sm text-green-300">Categorías</div>
+          <div className="text-xl font-bold text-green-200">{catList.length}</div>
+        </div>
+        <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <div className="text-sm text-purple-300">CV Principal</div>
+          <div className="text-xl font-bold text-purple-200">
+            {data?.categories?.find(cat => cat.primaryCv)?.primaryCv.filename || 'Ninguno'}
+          </div>
+        </div>
+      </div>
+
+      {/* Acciones rápidas */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <button 
+          onClick={() => window.location.href = '/dashboard'}
+          className="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
+        >
+          Subir Nuevo CV
+        </button>
+        <button 
+          onClick={() => {
+            data?.categories?.forEach(category => {
+              category.versions.forEach((cv: CV) => {
+                // Lógica para descargar todos los CVs
+                console.log('Descargar CV:', cv.filename);
+              });
+            });
+          }}
+          className="px-4 py-2 text-sm text-white bg-green-600 rounded hover:bg-green-700 transition-colors"
+        >
+          Descargar Todos
+        </button>
+        <button 
+          onClick={() => {
+            if (confirm('¿Estás seguro de que quieres eliminar todos los CVs? Esta acción no se puede deshacer.')) {
+              // Lógica para eliminar todos los CVs
+              console.log('Eliminar todos los CVs');
+            }
+          }}
+          className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+        >
+          Eliminar Todos
+        </button>
+      </div>
+
+      {/* Lista de CVs recientes */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-gray-300">CVs Recientes</h4>
+        {data?.categories?.flatMap(cat => cat.versions).slice(0, 3).map((cv: CV) => (
+          <div key={cv.id} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
+            <div className="flex-1">
+              <div className="font-medium text-white">{cv.filename}</div>
+              <div className="text-xs text-gray-400">
+                {cv.category} • v{cv.version} • {new Date(cv.created_at || '').toLocaleDateString()}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {!cv.is_primary && (
+                <button 
+                  onClick={() => handleSetPrimary(cv.id)}
+                  className="px-2 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700"
+                >
+                  Principal
+                </button>
+              )}
+              <button 
+                onClick={() => console.log('Descargar:', cv.filename)}
+                className="px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700"
+              >
+                Descargar
+              </button>
+              <button 
+                onClick={() => {
+                  if (confirm(`¿Eliminar ${cv.filename}?`)) {
+                    console.log('Eliminar CV:', cv.id);
+                  }
+                }}
+                className="px-2 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ))}
+        {data?.categories && data.categories.reduce((total, cat) => total + cat.versions.length, 0) > 3 && (
+          <div className="text-center">
+            <button className="text-sm text-indigo-400 hover:text-indigo-300">
+              Ver todos los CVs ({data.categories.reduce((total, cat) => total + cat.versions.length, 0) - 3} más)
+            </button>
           </div>
         )}
       </div>

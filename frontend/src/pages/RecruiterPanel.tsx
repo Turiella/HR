@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { MESSAGES } from '../constants/messages';
 import { getRanking, getCvCount } from '../api/ranking';
 import type { RankingRequest } from '../api/ranking';
 import type { Candidate, RankingResult, SearchParams } from '../types';
 import { ScoreBar, SkillTag, MatchIndicator, LoadingSpinner } from '../components/UIComponents';
 import { SearchPresets, FieldHelp } from '../components/SearchHelpers';
-import { searchPresets } from '../constants/presets';
 import { Autocomplete } from '../components/Autocomplete';
 import { techSkills, cities as citySuggestions } from '../constants/suggestions';
 import { Slider } from '../components/Slider';
 import { Analytics } from '../components/Analytics';
-import { ExportOptions, exportEnhancedCSV } from '../components/ExportOptions';
+import { ExportOptions } from '../components/ExportOptions';
+import { exportEnhancedCSV } from '../utils/exportUtils';
 import LogoutButton from '../components/LogoutButton';
 
 export default function RecruiterPanel() {
@@ -18,10 +19,20 @@ export default function RecruiterPanel() {
   const [preferredSkills, setPreferredSkills] = useState('docker');
   const [minExperience, setMinExperience] = useState(2);
   const [loading, setLoading] = useState(false);
+
+  interface SearchPreset {
+    name: string;
+    description: string;
+    requiredSkills: string[];
+    preferredSkills: string[];
+    minExperience: number;
+    jobDescription: string;
+  }
   const [loadingProgress, setLoadingProgress] = useState<number | undefined>();
   const [loadingMessage, setLoadingMessage] = useState('Analizando candidatos...');
   const [result, setResult] = useState<RankingResult | null>(null);
   const [cvCount, setCvCount] = useState<number | null>(null);
+  const [isCvCountLoaded, setIsCvCountLoaded] = useState(false);
   const [sortBy, setSortBy] = useState<'score' | 'experience' | 'name'>('score');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
   const [page, setPage] = useState(1);
@@ -75,19 +86,24 @@ export default function RecruiterPanel() {
     }
   }, []);
 
-  // Load CV count once on mount
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const token = localStorage.getItem('token') || '';
-        const data = await getCvCount(token);
-        setCvCount(data.count);
-      } catch (error) {
-      console.error('Error loading CV count:', error);
-    }
-    };
-    run();
-  }, []);
+useEffect(() => {
+  if (isCvCountLoaded) return;
+
+  const fetchCvCount = async () => {
+    try {
+      const data = await getCvCount();
+      setCvCount(data.count);
+      setIsCvCountLoaded(true);
+    } catch (error: unknown) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading CV count:', error);
+      }
+      alert(MESSAGES.ERROR.LOADING_CV_COUNT);
+        }
+  };
+
+  fetchCvCount();
+}, [isCvCountLoaded]);
 
   const handleRank = async () => {
     setLoading(true);
@@ -118,8 +134,7 @@ export default function RecruiterPanel() {
         cities: cities.split(',').map(s => s.trim()).filter(Boolean),
         maxDistanceKm: maxDistanceKm ? Number(maxDistanceKm) : undefined
       };
-      const token = localStorage.getItem('token') || '';
-      const data = await getRanking(payload, token);
+      const data = await getRanking(payload);
       
       setLoadingProgress(100);
       setLoadingMessage('¡Búsqueda completada!');
@@ -130,26 +145,24 @@ export default function RecruiterPanel() {
         setLoading(false);
         setLoadingProgress(undefined);
       }, 500);
-    } catch (error) {
-      console.error('Error generating ranking:', error);
-      alert('Error generando ranking');
+    } catch {
+      alert(MESSAGES.ERROR.GENERATING_RANKING);
       setLoading(false);
       setLoadingProgress(undefined);
     }
   };
 
-  const applyPreset = (preset: typeof searchPresets[0]) => {
-    const requiredSkillsStr = preset.requiredSkills.join(', ');
-    const preferredSkillsStr = preset.preferredSkills.join(', ');
-    
-    console.log('Applying preset:', {
-      name: preset.name,
-      requiredSkills: requiredSkillsStr,
-      preferredSkills: preferredSkillsStr
-    });
-    
-    setRequiredSkills(requiredSkillsStr);
-    setPreferredSkills(preferredSkillsStr);
+  const applyPreset = (preset: SearchPreset) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applying preset:', preset);
+    }
+    // Mantener los skills como arrays
+    setRequiredSkills(Array.isArray(preset.requiredSkills) 
+      ? preset.requiredSkills.join(', ') 
+      : preset.requiredSkills);
+    setPreferredSkills(Array.isArray(preset.preferredSkills) 
+      ? preset.preferredSkills.join(', ')
+      : preset.preferredSkills);
     setMinExperience(preset.minExperience);
     setJobDescription(preset.jobDescription);
   };
@@ -184,50 +197,51 @@ export default function RecruiterPanel() {
   };
 
   const downloadPDF = () => {
-    // Placeholder for PDF export
-    alert('Exportación PDF coming soon! Por ahora usa CSV.');
+    alert(MESSAGES.EXPORT.PDF_COMING_SOON);
   };
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="max-w-7xl pl-[calc(1.5rem+20px)] pr-6 py-6 mx-auto">
-      {/* Header Compacto */}
-      <div className="mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white flex items-center">
-              <span className="text-sm mr-2">🎯</span>
-              Panel de Reclutador
+      <div className="max-w-2xl pl-[calc(1.5rem+10px)] pr-6 py-6 mx-auto">
+      {}
+      <div className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
+             <div className="flex items-center justify-start gap-4">
+  <div className="flex flex-col items-center gap-3">
+    {cvCount != null && (
+      <div className="glass-container inline-flex">
+        <div className="flex items-center">
+          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+          <span className="text-xs text-white">
+            <span className="font-medium">{cvCount}</span> CVs en base
+          </span>
+        </div>
+      </div>
+    )}
+    <LogoutButton variant="header" />
+  </div>
+  <div className="text-left" >
+    <h1 className="text-lg font-bold text-white flex items-center justify-center">
+      <span className="text-sm mr-2"></span> Panel de Reclutador
             </h1>
             <p className="mt-1 text-sm text-gray-400">Filtrá candidatos y generá un ranking basado en skills, experiencia y descripción del puesto.</p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {cvCount != null && (
-              <div className="inline-flex items-center px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                <span className="text-sm text-green-300">
-                  <span className="font-medium">{cvCount}</span> CVs en base
-                </span>
-              </div>
-            )}
-            <LogoutButton variant="header" />
           </div>
-        </div>
       </div>
 
-      {/* Presets Section */}
-      <SearchPresets onApplyPreset={applyPreset} />
-
-      {/* Filtros de Búsqueda */}
-      <div className="p-6 mb-6 bg-white/5 border border-white/10 rounded-lg">
-        <h2 className="text-lg font-semibold mb-4 text-white flex items-center">
+      {/* Layout con CSS Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '15px', alignItems: 'start' }}>
+        {/* Columna izquierda - Contenido principal */}
+        <div>
+          {/* Filtros de Búsqueda */}
+          <div className="p-4 mb-4 glassmorphism-panel">
+        <h2 className="text-sm font-semibold mb-3 text-white flex items-center">
           <span className="text-xs mr-2">🔍</span>
           Filtros de Búsqueda
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="md:col-span-1">
-            <label className="block mb-1 text-sm font-medium flex items-center">
-              Required skills (coma separadas)
+            <label className="block mb-1 text-xs font-medium flex items-center">
+              Habilidades Requeridas (coma separadas)
               <FieldHelp 
                 field="Habilidades Requeridas" 
                 example="node, postgres, typescript" 
@@ -243,8 +257,8 @@ export default function RecruiterPanel() {
             />
           </div>
           <div className="md:col-span-1">
-            <label className="block mb-1 text-sm font-medium flex items-center">
-              Preferred skills (coma separadas)
+            <label className="block mb-1 text-xs font-medium flex items-center">
+              Habilidades Preferidas (coma separadas)
               <FieldHelp 
                 field="Habilidades Preferidas" 
                 example="docker, aws, react" 
@@ -260,7 +274,7 @@ export default function RecruiterPanel() {
             />
           </div>
           <div className="md:col-span-1">
-            <label className="block mb-1 text-sm font-medium flex items-center">
+            <label className="block mb-1 text-xs font-medium flex items-center">
               Años mínimos de experiencia
               <FieldHelp 
                 field="Experiencia Mínima" 
@@ -280,7 +294,7 @@ export default function RecruiterPanel() {
             />
           </div>
           <div className="md:col-span-1">
-            <label className="block mb-1 text-sm font-medium">Género</label>
+            <label className="block mb-1 text-xs font-medium">Género</label>
             <select className="w-full p-2 bg-black/20 border border-white/10 rounded outline-none focus:ring-2 focus:ring-indigo-500" value={gender} onChange={e => setGender(e.target.value)}>
               <option value="">Cualquiera</option>
               <option value="masculino">Masculino</option>
@@ -289,7 +303,7 @@ export default function RecruiterPanel() {
             </select>
           </div>
           <div className="md:col-span-1">
-            <label className="block mb-1 text-sm font-medium flex items-center">
+            <label className="block mb-1 text-xs font-medium flex items-center">
               Ciudades (coma separadas)
               <FieldHelp 
                 field="Ubicación" 
@@ -307,7 +321,7 @@ export default function RecruiterPanel() {
           </div>
           
           <div className="md:col-span-1">
-            <label className="block mb-1 text-sm font-medium flex items-center">
+            <label className="block mb-1 text-xs font-medium flex items-center">
               Distancia máx (km)
               <FieldHelp 
                 field="Distancia Máxima" 
@@ -327,7 +341,7 @@ export default function RecruiterPanel() {
             />
           </div>
           <div className="md:col-span-3">
-            <label className="block mb-1 text-sm font-medium flex items-center">
+            <label className="block mb-1 text-xs font-medium flex items-center">
               Descripción del puesto / Prompt
               <FieldHelp 
                 field="Descripción del Puesto" 
@@ -409,7 +423,7 @@ export default function RecruiterPanel() {
       {result && result.count > 0 && !loading && (
         <div className="space-y-4">
           {/* Search Summary */}
-          <div className="p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-lg">
+          <div className="p-4 bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl">
             <h3 className="text-sm font-semibold text-indigo-300 mb-2 flex items-center">
               <span className="mr-2">📊</span>
               Resumen de Búsqueda
@@ -444,7 +458,7 @@ export default function RecruiterPanel() {
 
           {/* Candidates */}
           {pageItems.map((c: Candidate, index: number) => (
-            <div key={c.cvId} className="p-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/8 transition-all">
+            <div key={c.cvId} className="p-4 bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl hover:bg-white/10 transition-all shadow-lg">
               {/* Header with Score */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">
@@ -585,7 +599,7 @@ export default function RecruiterPanel() {
 
       {/* Analytics Section */}
       {result && result.count > 0 && !loading && (
-        <div className="mt-8 p-6 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border border-indigo-500/20 rounded-lg">
+        <div className="mt-8 p-6 bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl shadow-xl">
           <Analytics 
             candidates={sortedCandidates}
           />
@@ -594,9 +608,16 @@ export default function RecruiterPanel() {
 
       {result && result.count === 0 && !loading && (
         <div className="p-6 mt-4 text-sm text-gray-300 bg-white/5 border border-white/10 rounded-lg">
-          No se encontraron candidatos con los filtros actuales. Probá quitar alguna skill requerida o bajar el mínimo de experiencia.
+          {MESSAGES.SEARCH.NO_RESULTS}
         </div>
       )}
+        </div>
+
+        {/* Columna derecha - Presets */}
+        <div className="glassmorphism-panel p-3">
+            <SearchPresets onApplyPreset={applyPreset} />
+          </div>
+      </div>
       </div>
     </div>
   );

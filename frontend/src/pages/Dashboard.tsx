@@ -8,9 +8,18 @@ export default function Dashboard() {
   if (role === 'admin') {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Panel de Administrador</h1>
-          <LogoutButton variant="header" />
+        <div className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
+          <div className="flex items-center justify-start gap-4">
+            <div className="flex flex-col items-start gap-3" style={{ marginTop: '20px' }}>
+              <LogoutButton variant="header" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-lg font-bold text-white flex items-center">
+                <span className="text-sm mr-2"></span> Panel de Administrador
+              </h1>
+              <p className="mt-1 text-sm text-gray-400">Panel de administración en desarrollo...</p>
+            </div>
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Funciones de Administrador</h2>
@@ -22,9 +31,18 @@ export default function Dashboard() {
   if (role === 'reclutador') {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Panel de Reclutador</h1>
-          <LogoutButton variant="header" />
+        <div className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
+          <div className="flex items-center justify-start gap-4">
+            <div className="flex flex-col items-start gap-3" style={{ marginTop: '20px' }}>
+              <LogoutButton variant="header" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-lg font-bold text-white flex items-center">
+                <span className="text-sm mr-2"></span> Panel de Reclutador
+              </h1>
+              <p className="mt-1 text-sm text-gray-400">Opciones del panel de reclutamiento</p>
+            </div>
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Opciones</h2>
@@ -38,9 +56,18 @@ export default function Dashboard() {
    if (role === 'candidato') {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Panel de Candidato</h1>
-          <LogoutButton variant="header" />
+        <div className="mb-6 p-6 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
+          <div className="flex items-center justify-start gap-4">
+            <div className="flex flex-col items-start gap-3" style={{ marginTop: '20px' }}>
+              <LogoutButton variant="header" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-lg font-bold text-white flex items-center">
+                <span className="text-sm mr-2"></span> Panel de Candidato
+              </h1>
+              <p className="mt-1 text-sm text-gray-400">Subir y gestionar tus CVs</p>
+            </div>
+          </div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Subir CV</h2>
